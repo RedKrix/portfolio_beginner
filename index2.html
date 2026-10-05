@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KRIKSPORTFOLIO</title>
+  <link rel="stylesheet" href="style2.css">
+</head>
+<body>
+
+<div class="container" id="app-container">
+
+  <!-- HEADER -->
+  <header class="header" id="main-header">
+    <a href="#profilo" class="nav-link profile-link" aria-label="Vai al profilo">
+      <img src="./media/cursed1.jpg" alt="Immagine di profilo" class="profile-img">
+    </a>
+    <div class="header-brand">
+      <button class="theme-toggle" type="button" aria-label="Cambia tema chiaro/scuro" title="Cambia tema">
+        <img class="theme-toggle__icon theme-toggle__icon--sun" src="./media/bulb-lighttodark.png" alt="" aria-hidden="true">
+        <img class="theme-toggle__icon theme-toggle__icon--moon" src="./media/bulb-darktolight.png" alt="" aria-hidden="true">
+      </button>
+      <div class="logo" id="blog-title">
+        <h2>KRIKSPORTFOLIO</h2>
+      </div>
+    </div>
+  </header>
+
+  <!-- MENU -->
+  <nav class="menu" id="sidebar-nav">
+    <ul>
+      <li><a href="#home"     class="nav-link">Home</a></li>
+      <li><a href="#progetti" class="nav-link">Progetti</a></li>
+      <li><a href="#blog"     class="nav-link">Blog</a></li>
+      <li><a href="#contatti" class="nav-link">Contatti</a></li>
+      <li><a href="#ai"       class="nav-link">AI</a></li>
+    </ul>
+  </nav>
+
+  <!-- CONTENUTO DINAMICO -->
+  <main class="content" id="main-content">
+    <h3>Benvenuto nel mio Blog Tech</h3>
+    <p>Lorem ipsum odor amet, consectetuer adipiscing elit. Ridiculus sit nisl laoreet facilisis aliquet. Potenti dignissim litora eget montes rhoncus sapien neque urna. Cursus libero sapien integer magnis ligula lobortis quam ut.</p>
+    <p>Altro paragrafo per testare lo spazio. Se il testo finisce, il footer deve comunque restare giù grazie a flex-grow.</p>
+  </main>
+
+  <!-- FOOTER -->
+  <footer id="main-footer">
+    <p>&copy; 2026 Il mio Portfolio. Tutti i diritti riservati.</p>
+  </footer>
+</div>
+
+<!-- SPA / HASH ROUTER -->
+<script>
+(function () {
+  var mainContent = document.getElementById('main-content');
+  var navLinks = document.querySelectorAll('.nav-link');
+  var originalHomeContent = mainContent.innerHTML;
+
+  // Mappa delle rotte statiche
+  var ROUTES = {
+    'home': null, 'progetti': 'progetti.html', 'blog': 'blog.html',
+    'contatti': 'contatti.html', 'ai': 'ai.html', 'profilo': 'profilo.html'
+  };
+
+  // Estrae la rotta dall'hash
+  function getRoute() {
+    return (location.hash || '').replace(/^#\/?/, '').split('/')[0] || 'home';
+  }
+
+  // Risolve il file da caricare
+  function resolveFile(route) {
+    // Gestione dinamica dei post: #post/nome-post -> posts/nome-post.html
+    if (route === 'post' && location.hash.includes('/')) {
+      return 'posts/' + location.hash.split('/')[1] + '.html';
+    }
+    return ROUTES[route];
+  }
+
+  // Aggiorna la classe "active" nel menu
+  function updateActiveMenu(route) {
+    navLinks.forEach(function(link) {
+      var linkRoute = link.getAttribute('href').replace('#', '');
+      link.classList.toggle('active', linkRoute === route);
+    });
+  }
+
+  // Carica la rotta corrente
+  function loadRoute() {
+    var route = getRoute();
+    var file = resolveFile(route);
+
+    updateActiveMenu(route);
+
+    // Se il file è null (Home) mostra il contenuto originale
+    if (!file) {
+      mainContent.innerHTML = originalHomeContent;
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    // Fetch del contenuto
+    fetch(file)
+      .then(function(r) { if (!r.ok) throw new Error(r.status); return r.text(); })
+      .then(function(html) { mainContent.innerHTML = html; window.scrollTo(0, 0); })
+      .catch(function() { mainContent.innerHTML = '<h3>Errore 404</h3><p>Pagina non trovata.</p>'; });
+  }
+
+  // Intercetta TUTTI i click sui link per la navigazione SPA
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest('a[href]');
+    if (!link) return;
+
+    var href = link.getAttribute('href');
+    
+    // Ignora link vuoti, ancore vuote, esterni, mail, tel, target blank o download
+    if (!href || href === '#' || /^(https?:|mailto:|tel:)/i.test(href) || link.target === '_blank' || link.hasAttribute('download')) {
+      return;
+    }
+
+    // Se è un link che punta a un file .html (es. i link dentro le pagine AJAX)
+    if (/\.html?$/i.test(href)) {
+      e.preventDefault(); // Blocca il ricaricamento della pagina
+      
+      // Estrae il nome del file dal percorso (es. "posts/ciao.html" -> "ciao")
+      var filename = href.split('/').pop().replace(/\.html?$/i, '');
+      
+      // Se si trova nella cartella posts, usa la rotta dinamica #post/nomefile
+      if (href.indexOf('posts/') !== -1) {
+        location.hash = '#post/' + filename;
+      } else {
+        // Altrimenti usa la rotta statica #nomefile
+        location.hash = '#' + (filename === 'index' ? 'home' : filename);
+      }
+      return;
+    }
+
+    // Se è un normale link con hash (es. #home) del menu, non facciamo preventDefault
+    // Lasciamo che il browser cambi l'hash e l'evento 'hashchange' farà il resto
+  });
+
+  window.addEventListener('hashchange', loadRoute);
+  loadRoute(); // Carica la rotta iniziale
+})();
+</script>
+
+<!-- THEME SWITCHER -->
+<script>
+(function () {
+  var root = document.documentElement;
+  var toggle = document.querySelector('.theme-toggle');
+  var STORAGE_KEY = 'kriks-theme';
+
+  function applyTheme(theme, animate) {
+    if (animate) {
+      root.classList.add('theme-transition');
+      setTimeout(function () { root.classList.remove('theme-transition'); }, 400);
+    }
+    if (theme === 'night') root.setAttribute('data-theme', 'night');
+    else root.removeAttribute('data-theme');
+  }
+
+  var saved = null;
+  try { saved = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+  var prefersNight = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved || (prefersNight ? 'night' : 'light'), false);
+
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      var next = root.getAttribute('data-theme') === 'night' ? 'light' : 'night';
+      applyTheme(next, true);
+      try { localStorage.setItem(STORAGE_KEY, next); } catch (e) {}
+    });
+  }
+})();
+</script>
+</body>
+</html>
